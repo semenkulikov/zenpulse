@@ -1,15 +1,22 @@
 import React, { useContext } from 'react';
 import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import PrimaryButton from '../components/PrimaryButton';
 import { SubscriptionContext } from '../subscriptionContext';
+import type { RootStackParamList } from '../App';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type PaywallNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Paywall'>;
 
 const PaywallScreen: React.FC = () => {
   const { setIsSubscribed } = useContext(SubscriptionContext);
+  const navigation = useNavigation<PaywallNavigationProp>();
 
   const handleSubscribe = () => {
     setIsSubscribed(true);
+    navigation.navigate('Meditation');
   };
 
   return (

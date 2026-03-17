@@ -24,12 +24,12 @@ export default function App() {
   return (
     <SubscriptionContext.Provider value={subscriptionContextValue}>
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!isSubscribed ? (
-            <Stack.Screen name="Paywall" component={PaywallScreen} />
-          ) : (
-            <Stack.Screen name="Meditation" component={MeditationScreen} />
-          )}
+        <Stack.Navigator
+          initialRouteName="Meditation"
+          screenOptions={{ headerShown: false }}
+        >
+          <Stack.Screen name="Meditation" component={MeditationScreen} />
+          <Stack.Screen name="Paywall" component={PaywallScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SubscriptionContext.Provider>

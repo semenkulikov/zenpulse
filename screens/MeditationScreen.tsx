@@ -91,7 +91,7 @@ const generateMeditationText = (mood: Mood): string => {
 };
 
 const MeditationScreen: React.FC = () => {
-  const { isSubscribed, setIsSubscribed } = useContext(SubscriptionContext);
+  const { isSubscribed } = useContext(SubscriptionContext);
   const navigation = useNavigation<MeditationNavigationProp>();
   const [aiText, setAiText] = useState<string | null>(null);
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
@@ -102,16 +102,32 @@ const MeditationScreen: React.FC = () => {
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <Text style={styles.title}>Медитации</Text>
-            {isSubscribed && (
-              <Pressable onPress={() => setIsSubscribed(false)}>
-                <Text style={styles.unsubscribeText}>Отменить подписку</Text>
-              </Pressable>
-            )}
+            <Pressable onPress={() => navigation.navigate('Paywall')}>
+              <Text style={styles.unsubscribeText}>Подписка</Text>
+            </Pressable>
           </View>
           <Text style={styles.subtitle}>
             Выберите практику под своё состояние. Премиум-сессии доступны по подписке ZenPulse Premium.
           </Text>
         </View>
+
+        <FlatList
+          data={meditations}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => {
+            const isLocked = !isSubscribed && item.isPremium;
+
+            return (
+              <MeditationCard
+                item={item}
+                isLocked={isLocked}
+                onPressLocked={() => navigation.navigate('Paywall')}
+              />
+            );
+          }}
+        />
 
         <View style={styles.aiCard}>
           <Text style={styles.aiTitle}>AI настрой дня</Text>
@@ -176,54 +192,53 @@ const MeditationScreen: React.FC = () => {
             <Text style={styles.aiArrowText}>{isAiExpanded ? '▲' : '▼'}</Text>
           </Pressable>
         </View>
-
-        <FlatList
-          data={meditations}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
-            const isLocked = !isSubscribed && item.isPremium;
-
-            return (
-              <Pressable
-                onPress={() => {
-                  if (isLocked) {
-                    navigation.navigate('Paywall');
-                  }
-                }}
-                style={({ pressed }) => [
-                  styles.card,
-                  isLocked && styles.cardLocked,
-                  pressed && !isLocked && styles.cardPressed,
-                ]}
-              >
-                <View style={styles.cardRow}>
-                  <View style={[styles.imagePlaceholder, { backgroundColor: item.imageColor }]}>
-                    <Image
-                      style={styles.imageOverlay}
-                      // Заглушка вместо реального изображения, можно заменить на ассет
-                      source={{ uri: 'https://via.placeholder.com/80x80.png?text=Zen' }}
-                    />
-                  </View>
-                  <View style={styles.cardTextContainer}>
-                    <View style={styles.cardTitleRow}>
-                      <Text style={styles.cardTitle}>{item.title}</Text>
-                      {isLocked && (
-                        <Text style={styles.lockBadge}>
-                          🔒 Только Premium
-                        </Text>
-                      )}
-                    </View>
-                    <Text style={styles.cardDuration}>{item.duration}</Text>
-                  </View>
-                </View>
-              </Pressable>
-            );
-          }}
-        />
       </View>
     </SafeAreaView>
+  );
+};
+
+type MeditationCardProps = {
+  item: MeditationItem;
+  isLocked: boolean;
+  onPressLocked: () => void;
+};
+
+const MeditationCard: React.FC<MeditationCardProps> = ({ item, isLocked, onPressLocked }) => {
+  return (
+    <Pressable
+      onPress={() => {
+        if (isLocked) {
+          onPressLocked();
+        }
+      }}
+      style={({ pressed }) => [
+        styles.card,
+        isLocked && styles.cardLocked,
+        pressed && !isLocked && styles.cardPressed,
+      ]}
+    >
+      <View style={styles.cardRow}>
+        <View style={[styles.imagePlaceholder, { backgroundColor: item.imageColor }]}>
+          <Image
+            style={styles.imageOverlay}
+            source={{ uri: 'https://via.placeholder.com/80x80.png?text=Zen' }}
+          />
+        </View>
+        <View style={styles.cardTextContainer}>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
+              {item.title}
+            </Text>
+            {isLocked && (
+              <Text style={styles.lockBadge}>
+                🔒 Только Premium
+              </Text>
+            )}
+          </View>
+          <Text style={styles.cardDuration}>{item.duration}</Text>
+        </View>
+      </View>
+    </Pressable>
   );
 };
 
@@ -253,7 +268,14 @@ const styles = StyleSheet.create({
   },
   unsubscribeText: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#E5E7EB',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#4F46E5',
+    backgroundColor: 'rgba(79, 70, 229, 0.15)',
+    overflow: 'hidden',
   },
   subtitle: {
     fontSize: 16,
