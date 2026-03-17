@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -62,17 +62,119 @@ const meditations: MeditationItem[] = [
   },
 ];
 
+type Mood = 'happy' | 'neutral' | 'sad';
+
+const mockAiCompletion = (prompt: string): string => {
+  if (prompt.includes('happy')) {
+    return 'Сегодня хороший день, чтобы мягко улыбнуться себе и миру. Дышите глубоко и напомните себе: я достоин(на) спокойствия и радости.';
+  }
+
+  if (prompt.includes('neutral')) {
+    return 'Сделайте несколько спокойных вдохов и выдохов, просто замечая ощущения. Позвольте уму стать чуть тише — без оценки, только мягкое наблюдение.';
+  }
+
+  return 'Сейчас может быть непросто, и это нормально. Почувствуйте опору под собой, сделайте медленный вдох и скажите себе: я не один(а), я забочусь о себе прямо сейчас.';
+};
+
+const generateMeditationText = (mood: Mood): string => {
+  const basePrompt = 'Generate short Russian meditation support message for mood: ';
+
+  switch (mood) {
+    case 'happy':
+      return mockAiCompletion(`${basePrompt}happy`);
+    case 'neutral':
+      return mockAiCompletion(`${basePrompt}neutral`);
+    case 'sad':
+    default:
+      return mockAiCompletion(`${basePrompt}sad`);
+  }
+};
+
 const MeditationScreen: React.FC = () => {
-  const { isSubscribed } = useContext(SubscriptionContext);
+  const { isSubscribed, setIsSubscribed } = useContext(SubscriptionContext);
   const navigation = useNavigation<MeditationNavigationProp>();
+  const [aiText, setAiText] = useState<string | null>(null);
+  const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
+  const [isAiExpanded, setIsAiExpanded] = useState<boolean>(false);
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Медитации</Text>
+          <View style={styles.headerTopRow}>
+            <Text style={styles.title}>Медитации</Text>
+            {isSubscribed && (
+              <Pressable onPress={() => setIsSubscribed(false)}>
+                <Text style={styles.unsubscribeText}>Отменить подписку</Text>
+              </Pressable>
+            )}
+          </View>
           <Text style={styles.subtitle}>
             Выберите практику под своё состояние. Премиум-сессии доступны по подписке ZenPulse Premium.
           </Text>
+        </View>
+
+        <View style={styles.aiCard}>
+          <Text style={styles.aiTitle}>AI настрой дня</Text>
+          <Text style={styles.aiSubtitle}>Выберите настроение, и мы подберём мягкий текст-поддержку.</Text>
+
+          {isAiExpanded && (
+            <>
+              <View style={styles.aiMoodRow}>
+                <Pressable
+                  onPress={() => {
+                    const text = generateMeditationText('happy');
+                    setAiText(text);
+                    setSelectedMood('happy');
+                  }}
+                  style={[
+                    styles.aiMoodButton,
+                    selectedMood === 'happy' && styles.aiMoodButtonSelected,
+                  ]}
+                >
+                  <Text style={styles.aiMoodEmoji}>😊</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => {
+                    const text = generateMeditationText('neutral');
+                    setAiText(text);
+                    setSelectedMood('neutral');
+                  }}
+                  style={[
+                    styles.aiMoodButton,
+                    selectedMood === 'neutral' && styles.aiMoodButtonSelected,
+                  ]}
+                >
+                  <Text style={styles.aiMoodEmoji}>😐</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => {
+                    const text = generateMeditationText('sad');
+                    setAiText(text);
+                    setSelectedMood('sad');
+                  }}
+                  style={[styles.aiMoodButton, selectedMood === 'sad' && styles.aiMoodButtonSelected]}
+                >
+                  <Text style={styles.aiMoodEmoji}>😔</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.aiResultCard}>
+                <Text style={styles.aiResultLabel}>Ответ AI</Text>
+                <Text style={styles.aiResultText}>
+                  {aiText ?? 'Выберите настроение, чтобы получить мягкую подсказку на день.'}
+                </Text>
+              </View>
+            </>
+          )}
+
+          <Pressable
+            onPress={() => setIsAiExpanded((prev) => !prev)}
+            style={styles.aiArrowToggle}
+          >
+            <Text style={styles.aiArrowText}>{isAiExpanded ? '▲' : '▼'}</Text>
+          </Pressable>
         </View>
 
         <FlatList
@@ -138,16 +240,98 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   title: {
     fontSize: 26,
     fontWeight: '700',
     color: '#E5E7EB',
-    marginBottom: 12,
+  },
+  unsubscribeText: {
+    fontSize: 13,
+    color: '#9CA3AF',
   },
   subtitle: {
     fontSize: 16,
     color: '#9CA3AF',
     lineHeight: 22,
+  },
+  aiCard: {
+    borderRadius: 18,
+    padding: 16,
+    backgroundColor: '#020617',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    marginBottom: 20,
+  },
+  aiTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#E5E7EB',
+    marginBottom: 4,
+  },
+  aiSubtitle: {
+    fontSize: 13,
+    color: '#9CA3AF',
+  },
+  aiMoodRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  aiMoodButton: {
+    flex: 1,
+    paddingVertical: 8,
+    marginHorizontal: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#020617',
+  },
+  aiMoodButtonSelected: {
+    borderColor: '#4F46E5',
+    backgroundColor: '#111827',
+  },
+  aiMoodEmoji: {
+    fontSize: 20,
+  },
+  aiResultCard: {
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#020617',
+    borderWidth: 1,
+    borderColor: '#111827',
+  },
+  aiResultLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 6,
+  },
+  aiResultText: {
+    fontSize: 14,
+    color: '#E5E7EB',
+    lineHeight: 20,
+  },
+  aiArrowToggle: {
+    marginTop: 8,
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#020617',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+  },
+  aiArrowText: {
+    fontSize: 14,
+    color: '#9CA3AF',
   },
   listContent: {
     paddingBottom: 16,
